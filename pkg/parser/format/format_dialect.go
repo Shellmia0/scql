@@ -28,6 +28,7 @@ var (
 	_ Dialect = &PostgresDialect{}
 	_ Dialect = &CVSDBDialect{}
 	_ Dialect = &OdpsDialect{}
+	_ Dialect = &HiveDialect{}
 )
 
 type Dialect interface {
@@ -368,5 +369,66 @@ func (d *OdpsDialect) ConvertCastTypeToString(asType byte, flen int, decimal int
 }
 
 func (d *OdpsDialect) NeedParenthesesForCmpOperand() bool {
+	return true
+}
+
+// HiveDialect Hive SQL dialect
+type HiveDialect struct {
+	MySQLDialect
+	funcNameMap map[string]string
+}
+
+func NewHiveDialect() Dialect {
+	return &HiveDialect{
+		funcNameMap: map[string]string{
+			"ifnull":   "nvl",
+			"truncate": "trunc",
+			"now":      "current_timestamp",
+			"curdate":  "current_date",
+		},
+	}
+}
+
+func (d *HiveDialect) SkipSchemaInColName() bool {
+	return true
+}
+
+func (d *HiveDialect) GetSpecialFuncName(originName string) string {
+	if res, ok := d.funcNameMap[originName]; ok {
+		return res
+	}
+	return originName
+}
+
+func (d *HiveDialect) ConvertCastTypeToString(asType byte, flen int, decimal int, flag uint) (keyword string, plainWord string, err error) {
+	switch asType {
+	case mysql.TypeVarString, mysql.TypeVarchar:
+		keyword = "STRING"
+	case mysql.TypeNewDecimal:
+		keyword = "DECIMAL"
+		if flen > 0 && decimal > 0 {
+			plainWord = fmt.Sprintf("(%d, %d)", flen, decimal)
+		} else if flen > 0 {
+			plainWord = fmt.Sprintf("(%d)", flen)
+		}
+	case mysql.TypeLonglong:
+		if flag&mysql.UnsignedFlag != 0 {
+			err = fmt.Errorf("unsupported cast as data type %+v", asType)
+			return
+		}
+		keyword = "BIGINT"
+	case mysql.TypeDouble, mysql.TypeFloat:
+		keyword = "DOUBLE"
+	case mysql.TypeDate:
+		keyword = "DATE"
+	case mysql.TypeDatetime:
+		keyword = "TIMESTAMP"
+	default:
+		return d.MySQLDialect.ConvertCastTypeToString(asType, flen, decimal, flag)
+	}
+	return
+}
+
+func (d *HiveDialect) NeedParenthesesForCmpOperand() bool {
 	return true
 }

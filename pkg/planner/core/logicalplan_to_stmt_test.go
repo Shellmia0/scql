@@ -37,6 +37,8 @@ import (
 )
 
 var _ = Suite(&testRunSQLSuite{})
+
+// Note: Hive is not included in testBackEnds for now, add test cases to runsql_in.json before enabling
 var testBackEnds = []string{MySQL, Postgres, ODPS, CSV}
 
 const (
@@ -44,6 +46,7 @@ const (
 	Postgres = "POSTGRESQL"
 	ODPS     = "ODPS"
 	CSV      = "CSVDB"
+	Hive     = "HIVE"
 )
 
 type testRunSQLSuite struct {
@@ -62,9 +65,11 @@ type TestCaseSqlString struct {
 	RewrittenSqlMysql string `json:"rewritten_sql_mysql"`
 	RewrittenSqlPg    string `json:"rewritten_sql_pg"`
 	RewrittenSqlCSV   string `json:"rewritten_sql_csv"`
+	RewrittenSqlHive  string `json:"rewritten_sql_hive"`
 	SkipOdpsTest      bool   `json:"skip_odps_test"`
 	SkipPgTest        bool   `json:"skip_pg_test"`
 	SkipCSVTest       bool   `json:"skip_csv_test"`
+	SkipHiveTest      bool   `json:"skip_hive_test"`
 	// default; if RewrittenSql set, all back ends use this sql as default
 	RewrittenSql string `json:"rewritten_sql"`
 }
@@ -161,6 +166,11 @@ func GetExpectSQL(backEnd string, testCase TestCaseSqlString) string {
 			return testCase.RewrittenSqlCSV
 		}
 	}
+	if backEnd == Hive {
+		if testCase.RewrittenSqlHive != "" {
+			return testCase.RewrittenSqlHive
+		}
+	}
 	return testCase.RewrittenSql
 }
 
@@ -174,6 +184,8 @@ func SkipTestFor(backEnd string, testCase TestCaseSqlString) bool {
 		return testCase.SkipOdpsTest
 	case CSV:
 		return testCase.SkipCSVTest
+	case Hive:
+		return testCase.SkipHiveTest
 	}
 	return false
 }
