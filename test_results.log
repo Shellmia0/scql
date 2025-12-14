@@ -1,0 +1,97 @@
+========================================
+🧪 SCQL 隐私保护联合计算自动化测试
+========================================
+
+[前置检查] 检查服务状态...
+[0;32m✅ 所有服务运行正常[0m
+
+[准备] 清理并初始化测试环境...
+[准备] 创建用户...
+[准备] 创建表...
+[准备] 注册 Engine 端点...
+[准备] 设置 CCL 权限...
+[0;32m✅ 测试环境准备完成[0m
+
+========================================
+🧪 开始执行测试用例
+========================================
+
+----------------------------------------
+测试 1: 隐私保护的联合查询
+----------------------------------------
+SQL: SELECT ta.credit_rank, COUNT(*) as cnt, AVG(ta.income) as avg_income, AVG(tb.order_amount) as avg_amount FROM demo.user_credit AS ta INNER JOIN demo.user_stats AS tb ON ta.id = tb.id WHERE ta.age >= 20 AND ta.age <= 30 AND tb.is_active = 1 GROUP BY ta.credit_rank;
+
+[0;31m❌ 失败[0m: 查询应该成功但被拒绝
+错误信息: [fetch]err: Code: 101, message:user alice authentication failed
+
+----------------------------------------
+测试 2: Alice 尝试直接查看 Bob 的原始数据
+----------------------------------------
+SQL: SELECT tb.order_amount FROM demo.user_stats AS tb LIMIT 10;
+
+[0;32m✅ 通过[0m: 查询被正确拒绝（符合预期）
+错误信息: [fetch]err: Code: 101, message:user alice authentication failed
+
+----------------------------------------
+测试 3: Alice 尝试通过 JOIN 查看 Bob 的原始数据
+----------------------------------------
+SQL: SELECT ta.id, tb.order_amount FROM demo.user_credit AS ta INNER JOIN demo.user_stats AS tb ON ta.id = tb.id LIMIT 10;
+
+[0;32m✅ 通过[0m: 查询被正确拒绝（符合预期）
+错误信息: [fetch]err: Code: 101, message:user alice authentication failed
+
+----------------------------------------
+测试 4: Alice 查看 Bob 数据的聚合结果
+----------------------------------------
+SQL: SELECT AVG(tb.order_amount) as avg_amount FROM demo.user_stats AS tb;
+
+[0;31m❌ 失败[0m: 查询应该成功但被拒绝
+错误信息: [fetch]err: Code: 101, message:user alice authentication failed
+
+----------------------------------------
+测试 5: Bob 查看自己的数据
+----------------------------------------
+SQL: SELECT * FROM demo.user_stats LIMIT 10;
+
+[0;31m❌ 失败[0m: 查询应该成功但被拒绝
+错误信息: [fetch]err: Code: 101, message:user bob authentication failed
+
+----------------------------------------
+测试 6: Bob 尝试查看 Alice 的原始数据
+----------------------------------------
+SQL: SELECT ta.income FROM demo.user_credit AS ta LIMIT 10;
+
+[0;32m✅ 通过[0m: 查询被正确拒绝（符合预期）
+错误信息: [fetch]err: Code: 101, message:user bob authentication failed
+
+----------------------------------------
+测试 7: Alice 查看自己的数据
+----------------------------------------
+SQL: SELECT * FROM demo.user_credit LIMIT 10;
+
+[0;31m❌ 失败[0m: 查询应该成功但被拒绝
+错误信息: [fetch]err: Code: 101, message:user alice authentication failed
+
+----------------------------------------
+测试 8: Alice 对自己的数据进行聚合
+----------------------------------------
+SQL: SELECT credit_rank, AVG(income) as avg_income FROM demo.user_credit GROUP BY credit_rank;
+
+[0;31m❌ 失败[0m: 查询应该成功但被拒绝
+错误信息: [fetch]err: Code: 101, message:user alice authentication failed
+
+========================================
+📊 测试结果总结
+========================================
+
+总测试数: 8
+[0;32m通过: 3[0m
+[0;31m失败: 5[0m
+
+[0;31m❌ 有 5 个测试失败[0m
+
+请检查：
+  1. 服务是否正常运行
+  2. CCL 权限是否正确设置
+  3. Engine 端点是否正确注册
+  4. 查看日志: tail -f examples/scdb-tutorial/logs/*.log

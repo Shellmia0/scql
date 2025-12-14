@@ -1,0 +1,6 @@
+2025-11-30 22:24:36.113010 INFO main.go:74 SCDB version: 0.9.5dev.20251130-21:40:26.5de28ec
+2025-11-30 22:24:36.113010 INFO main.go:75 Starting to read config file: /root/autodl-tmp/scql/examples/scdb-tutorial/scdb/conf/config_local.yml
+2025-11-30 22:24:36.113010 INFO main.go:88 Starting to connect to database and do bootstrap if necessary...
+2025-11-30 22:24:36.113010 INFO logger.go:148 /root/autodl-tmp/scql/pkg/scdb/server/server.go:109
+[error] failed to initialize database, got error dial tcp 127.0.0.1:3306: connect: connection refused
+2025-11-30 22:24:36.113010 FATAL main.go:92 Failed to connect to database and bootstrap it: dial tcp 127.0.0.1:3306: connect: connection refused
