@@ -75,8 +75,10 @@ void DatasourceAdaptorMgr::RegisterBuiltinAdaptorFactories() {
       {DataSourceKind::DATAPROXY, std::make_shared<DpAdaptorFactory>()});
   factory_maps_.insert(
       {DataSourceKind::CSVDB, std::make_shared<CsvdbAdaptorFactory>()});
-  factory_maps_.insert(
-      {DataSourceKind::ARROWSQL, std::make_shared<ArrowSqlAdaptorFactory>()});
+  auto arrow_sql_adaptor_factory = std::make_shared<ArrowSqlAdaptorFactory>();
+  factory_maps_.insert({DataSourceKind::ARROWSQL, arrow_sql_adaptor_factory});
+  // Hive uses Arrow Flight SQL protocol for better performance and native columnar support
+  factory_maps_.insert({DataSourceKind::HIVE, arrow_sql_adaptor_factory});
 }
 
 }  // namespace scql::engine

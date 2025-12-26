@@ -27,6 +27,7 @@ enum DataSourceKind {
   ARROWSQL = 5;
   GRPC = 6;
   DATAPROXY = 7;
+  HIVE = 8;
 }
 
 message DataSource {

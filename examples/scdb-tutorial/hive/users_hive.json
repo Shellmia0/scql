@@ -1,0 +1,14 @@
+{
+    "alice": {
+        "UserName": "alice",
+        "Password": "alice123"
+    },
+    "bob": {
+        "UserName": "bob",
+        "Password": "bob123"
+    },
+    "root": {
+        "UserName": "root",
+        "Password": "812357]4gJ9}.>Vx"
+    }
+}
