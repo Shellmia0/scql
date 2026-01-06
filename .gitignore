@@ -36,3 +36,14 @@ logs/scdbserver.log
 
 # ignore bazelrc for remote cache
 .remote.bazelrc
+
+# scdb-tutorial 配置和日志文件
+examples/scdb-tutorial/scdb/conf/config.yml
+examples/scdb-tutorial/scdb/conf/config_local.yml
+examples/scdb-tutorial/scdb/conf/config_hive.yml
+examples/scdb-tutorial/logs/
+
+# 根目录编译生成的可执行文件
+/scdbclient
+/scqltool
+/brokerctl
