@@ -648,7 +648,8 @@
       {
         "sql": "select replace(plain_string_0, 'a', 'b') as res1 from alice.tbl_0;",
         "skip_projection": false,
-        "rewritten_sql": "select replace(tbl_0.plain_string_0, 'a', 'b') as res1 from alice.tbl_0"
+        "rewritten_sql": "select replace(tbl_0.plain_string_0, 'a', 'b') as res1 from alice.tbl_0",
+        "rewritten_sql_hive": "select regexp_replace(tbl_0.plain_string_0, 'a', 'b') as res1 from alice.tbl_0"
       },
       {
         "sql": "SELECT a.SVC_NUM AS SVC_NUM, a.plain_string_2, IF((d.plain_int_1 <= 30) OR d.plain_int_1 IS NULL, '1', IF(d.plain_int_1 <= 100, '2', '3')) AS plain_int_1, IF(a.compare_string_0 = '1', '是', '否') AS compare_string_0, IF((a.compare_int_1 <= 21) OR a.compare_int_1 IS NULL, '1', '2') AS compare_int_1 FROM (SELECT a.plain_int_2 AS SVC_NUM, a.plain_string_2, c.compare_string_0, c.compare_int_1 FROM alice.tbl_2 AS a LEFT JOIN (SELECT plain_int_0, compare_string_0, compare_int_1 FROM alice.tbl_0 WHERE plain_string_1 = '202505') AS c ON a.plain_int_2 = c.plain_int_0) AS a LEFT JOIN (SELECT plain_int_0, plain_int_1 FROM alice.tbl_1 WHERE plain_string_1 = '202505') AS d ON a.SVC_NUM = d.plain_int_0;",

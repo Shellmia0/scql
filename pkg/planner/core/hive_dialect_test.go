@@ -135,6 +135,82 @@ func TestHiveDialectConversion(t *testing.T) {
 			inputSQL:    "select plain_float_0 from alice.tbl_1 limit 10 offset 5",
 			expectedSQL: "select tbl_1.plain_float_0 from alice.tbl_1 limit 10 offset 5",
 		},
+		// Extended function mappings tests (only using SCQL-supported functions)
+		{
+			name:        "SUBSTRING to SUBSTR",
+			inputSQL:    "select substring(plain_string_0, 1, 5) from alice.tbl_0",
+			expectedSQL: "select substr(tbl_0.plain_string_0, 1, 5) as expr_121 from alice.tbl_0",
+		},
+		{
+			name:        "Math function CEIL",
+			inputSQL:    "select ceil(plain_float_0) from alice.tbl_1",
+			expectedSQL: "select ceil(tbl_1.plain_float_0) as expr_121 from alice.tbl_1",
+		},
+		{
+			name:        "Math function FLOOR",
+			inputSQL:    "select floor(plain_float_0) from alice.tbl_1",
+			expectedSQL: "select floor(tbl_1.plain_float_0) as expr_121 from alice.tbl_1",
+		},
+		{
+			name:        "Math function ROUND",
+			inputSQL:    "select round(plain_float_0, 2) from alice.tbl_1",
+			expectedSQL: "select round(tbl_1.plain_float_0, 2) as expr_121 from alice.tbl_1",
+		},
+		{
+			name:        "Math function ABS",
+			inputSQL:    "select abs(plain_float_0) from alice.tbl_1",
+			expectedSQL: "select abs(tbl_1.plain_float_0) as expr_121 from alice.tbl_1",
+		},
+		{
+			name:        "TRIM function",
+			inputSQL:    "select trim(plain_string_0) from alice.tbl_0",
+			expectedSQL: "select trim(tbl_0.plain_string_0) as expr_121 from alice.tbl_0",
+		},
+		{
+			name:        "COALESCE function",
+			inputSQL:    "select coalesce(plain_float_0, plain_float_1, 0) from alice.tbl_1",
+			expectedSQL: "select coalesce(tbl_1.plain_float_0, tbl_1.plain_float_1, 0) as expr_121 from alice.tbl_1",
+		},
+		{
+			name:        "Math function SQRT",
+			inputSQL:    "select sqrt(plain_float_0) from alice.tbl_1",
+			expectedSQL: "select sqrt(tbl_1.plain_float_0) as expr_121 from alice.tbl_1",
+		},
+		{
+			name:        "Math function LN",
+			inputSQL:    "select ln(plain_float_0) from alice.tbl_1",
+			expectedSQL: "select ln(tbl_1.plain_float_0) as expr_121 from alice.tbl_1",
+		},
+		{
+			name:        "Math function LOG10",
+			inputSQL:    "select log10(plain_float_0) from alice.tbl_1",
+			expectedSQL: "select log10(tbl_1.plain_float_0) as expr_121 from alice.tbl_1",
+		},
+		{
+			name:        "Math function EXP",
+			inputSQL:    "select exp(plain_float_0) from alice.tbl_1",
+			expectedSQL: "select exp(tbl_1.plain_float_0) as expr_121 from alice.tbl_1",
+		},
+		{
+			name:        "Math function POW",
+			inputSQL:    "select pow(plain_float_0, 2) from alice.tbl_1",
+			expectedSQL: "select pow(tbl_1.plain_float_0, 2) as expr_121 from alice.tbl_1",
+		},
+		{
+			name:        "LENGTH function",
+			inputSQL:    "select length(plain_string_0) from alice.tbl_0",
+			expectedSQL: "select length(tbl_0.plain_string_0) as expr_121 from alice.tbl_0",
+		},
+		{
+			name:        "REPLACE function (maps to regexp_replace in Hive)",
+			inputSQL:    "select replace(plain_string_0, 'a', 'b') from alice.tbl_0",
+			expectedSQL: "select regexp_replace(tbl_0.plain_string_0, 'a', 'b') as expr_121 from alice.tbl_0",
+		},
+		{
+			name:        "INSTR function",
+			inputSQL:    "select instr(plain_string_0, 'test') from alice.tbl_0",
+			expectedSQL: "select instr(tbl_0.plain_string_0, 'test') as expr_121 from alice.tbl_0",
+		},
 	}
 
 	for _, tc := range testCases {
