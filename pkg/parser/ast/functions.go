@@ -452,6 +452,49 @@ func (n *FuncCallExpr) RestoreDateFuncWithPostgresDialect(ctx *RestoreCtx) (err 
 	return nil
 }
 
+func (n *FuncCallExpr) RestoreDateFuncWithHiveDialect(ctx *RestoreCtx) (err error) {
+	switch n.FnName.L {
+	case Curdate:
+		ctx.WriteKeyWord(ctx.Dialect.GetSpecialFuncName(n.FnName.L))
+		ctx.WritePlain("()")
+	case Now:
+		ctx.WriteKeyWord(ctx.Dialect.GetSpecialFuncName(n.FnName.L))
+		ctx.WritePlain("()")
+	case AddDate, SubDate, DateAdd, DateSub:
+		ctx.WriteKeyWord(n.FnName.O)
+		ctx.WritePlain("(")
+		if err = n.Args[0].Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore FuncCallExpr.Args[0]")
+		}
+		ctx.WritePlain(", ")
+		ctx.WriteKeyWord("INTERVAL ")
+		if err := n.Args[1].Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore FuncCallExpr.Args[1]")
+		}
+		ctx.WritePlain(" ")
+		old_ctx_flags := ctx.Flags
+		ctx.Flags &= ^format.RestoreStringSingleQuotes
+		if err := n.Args[2].Restore(ctx); err != nil {
+			return errors.Annotatef(err, "An error occurred while restore FuncCallExpr.Args[2]")
+		}
+		ctx.Flags = old_ctx_flags
+		ctx.WritePlain(")")
+	default:
+		ctx.WriteKeyWord(n.FnName.O)
+		ctx.WritePlain("(")
+		for i, argv := range n.Args {
+			if i != 0 {
+				ctx.WritePlain(", ")
+			}
+			if err := argv.Restore(ctx); err != nil {
+				return errors.Annotatef(err, "An error occurred while restore FuncCallExpr.Args %d", i)
+			}
+		}
+		ctx.WritePlain(")")
+	}
+	return nil
+}
+
 func (n *FuncCallExpr) RestoreDateFuncWithCSVDBDialect(ctx *RestoreCtx) (err error) {
 	switch n.FnName.L {
 	case Curdate:
@@ -530,6 +573,8 @@ func (n *FuncCallExpr) Restore(ctx *RestoreCtx) error {
 			return n.RestoreDateFuncWithPostgresDialect(ctx)
 		case *CVSDBDialect:
 			return n.RestoreDateFuncWithCSVDBDialect(ctx)
+		case *HiveDialect:
+			return n.RestoreDateFuncWithHiveDialect(ctx)
 		default:
 			return n.RestoreDateFuncWithMysqlDialect(ctx)
 		}
