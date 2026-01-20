@@ -38,8 +38,8 @@ import (
 
 var _ = Suite(&testRunSQLSuite{})
 
-// Note: Hive is not included in testBackEnds for now, add test cases to runsql_in.json before enabling
-var testBackEnds = []string{MySQL, Postgres, ODPS, CSV}
+// Hive is now included in testBackEnds
+var testBackEnds = []string{MySQL, Postgres, ODPS, CSV, Hive}
 
 const (
 	MySQL    = "MYSQL"
