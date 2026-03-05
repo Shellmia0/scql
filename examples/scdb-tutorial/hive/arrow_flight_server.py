@@ -337,16 +337,23 @@ class FlightSqlServer(flight.FlightServerBase):
 
     def _preprocess_query(self, query: str) -> str:
         """
-        预处理 SQL 查询
+        Preprocess SQL query for the target backend.
 
-        对于 DuckDB 后端：将 default.table 转换为 "default".table
-        对于 Hive 后端：保持原样（Hive 使用 database.table 格式）
+        - Strip trailing semicolons (Hive doesn't accept them)
+        - DuckDB: strip party name prefixes (alice./bob./etc.)
+        - Hive: strip database prefixes (already connected to the right DB)
         """
         import re
+
+        # Strip trailing semicolons - Hive rejects them
+        query = query.rstrip().rstrip(';').rstrip()
 
         if isinstance(self.backend, DuckDBBackend):
             # Strip party name prefix (alice./bob./default./hive_demo.) for DuckDB
             query = re.sub(r'\b(?:alice|bob|default|hive_demo)\.', '', query, flags=re.IGNORECASE)
+        else:
+            # Hive backend: strip database prefix since we're already in the right DB
+            query = re.sub(r'\b(?:alice|bob|hive_demo)\.', '', query, flags=re.IGNORECASE)
 
         return query
 
