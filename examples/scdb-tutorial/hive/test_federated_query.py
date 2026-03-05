@@ -9,7 +9,8 @@ import json
 import time
 
 SCDB_URL = "http://localhost:8080"
-ROOT_PASSWORD = "p6>14%h:u2&79k83"  # 从日志中获取
+import os
+ROOT_PASSWORD = os.environ.get("SCQL_ROOT_PASSWORD", "change_me")  # Set via environment variable
 
 def execute_sql(sql, user="root", password=ROOT_PASSWORD):
     """执行 SCQL 查询"""

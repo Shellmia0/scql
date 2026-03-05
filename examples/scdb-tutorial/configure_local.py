@@ -18,7 +18,7 @@ if not mysql_password:
 alice_conf = "engine/alice/conf/gflags.conf"
 bob_conf = "engine/bob/conf/gflags.conf"
 scdb_conf = "scdb/conf/config.yml"
-scdb_host = "scdb/conf/config.yml"
+# scdb_host = "scdb/conf/config.yml"
 
 def update_file(filepath, replacements):
     with open(filepath, 'r') as f:

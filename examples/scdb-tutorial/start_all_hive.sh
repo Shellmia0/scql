@@ -2,8 +2,8 @@
 # SCQL 本地启动脚本 - Hive 后端版本
 # 使用 Arrow Flight SQL 服务器模拟 Hive 数据源
 
-PROJECT_ROOT="/root/autodl-tmp/scql"
-TUTORIAL_DIR="/root/autodl-tmp/scql/examples/scdb-tutorial"
+PROJECT_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
+TUTORIAL_DIR="$PROJECT_ROOT/examples/scdb-tutorial"
 HIVE_DIR="$TUTORIAL_DIR/hive"
 BIN_DIR="$PROJECT_ROOT/bin"
 
