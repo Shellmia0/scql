@@ -29,6 +29,56 @@ import pyarrow as pa
 import pyarrow.flight as flight
 
 
+# === Hive SQL Dialect Converter ===
+class HiveDialectConverter:
+    """Converts MySQL/standard SQL to Hive-compatible SQL.
+    
+    Handles:
+    - Trailing semicolons (Hive rejects them)
+    - Database/party prefixes (strip when already connected to right DB)
+    - IFNULL(a, b) → COALESCE(a, b)
+    - NOW() → CURRENT_TIMESTAMP
+    - CAST(x AS SIGNED/UNSIGNED) → CAST(x AS BIGINT)
+    - CAST(x AS VARCHAR/CHAR) → CAST(x AS STRING)
+    """
+    import re as _re
+
+    def __init__(self, party: str = "", database: str = ""):
+        import re
+        self.party = party
+        self.database = database
+        prefixes = {"alice", "bob", "default", "hive_demo"}
+        if party:
+            prefixes.add(party.lower())
+        if database:
+            prefixes.add(database.lower())
+        self._prefix_pattern = re.compile(
+            r'\b(?:' + '|'.join(re.escape(p) for p in prefixes) + r')\.',
+            re.IGNORECASE
+        )
+
+    def convert(self, query: str) -> str:
+        """Apply all dialect conversions to a SQL query."""
+        import re
+        # Strip trailing semicolons
+        query = query.rstrip().rstrip(';').rstrip()
+        # Strip database/party prefixes
+        query = self._prefix_pattern.sub('', query)
+        # IFNULL → COALESCE
+        query = re.sub(r'\bIFNULL\s*\(', 'COALESCE(', query, flags=re.IGNORECASE)
+        # NOW() → CURRENT_TIMESTAMP
+        query = re.sub(r'\bNOW\s*\(\s*\)', 'CURRENT_TIMESTAMP', query, flags=re.IGNORECASE)
+        # CAST types: SIGNED/UNSIGNED → BIGINT
+        query = re.sub(
+            r'\bCAST\s*\((.+?)\s+AS\s+(?:SIGNED|UNSIGNED)(?:\s+INTEGER)?\s*\)',
+            r'CAST(\1 AS BIGINT)', query, flags=re.IGNORECASE)
+        # CAST types: VARCHAR/CHAR → STRING
+        query = re.sub(
+            r'\bCAST\s*\((.+?)\s+AS\s+(?:VARCHAR|CHAR)(?:\s*\(\s*\d+\s*\))?\s*\)',
+            r'CAST(\1 AS STRING)', query, flags=re.IGNORECASE)
+        return query
+
+
 # =============================================================================
 # 后端抽象层
 # =============================================================================
@@ -339,23 +389,23 @@ class FlightSqlServer(flight.FlightServerBase):
         """
         Preprocess SQL query for the target backend.
 
-        - Strip trailing semicolons (Hive doesn't accept them)
-        - DuckDB: strip party name prefixes (alice./bob./etc.)
-        - Hive: strip database prefixes (already connected to the right DB)
+        Uses HiveDialectConverter for Hive backend (full dialect conversion).
+        For DuckDB: strips party name prefixes and semicolons.
         """
         import re
 
-        # Strip trailing semicolons - Hive rejects them
-        query = query.rstrip().rstrip(';').rstrip()
-
-        if isinstance(self.backend, DuckDBBackend):
-            # Strip party name prefix (alice./bob./default./hive_demo.) for DuckDB
-            query = re.sub(r'\b(?:alice|bob|default|hive_demo)\.', '', query, flags=re.IGNORECASE)
+        if isinstance(self.backend, HiveBackend):
+            # Full Hive dialect conversion
+            if not hasattr(self, '_dialect'):
+                self._dialect = HiveDialectConverter(
+                    party=self.party, database=self.backend.database
+                )
+            return self._dialect.convert(query)
         else:
-            # Hive backend: strip database prefix since we're already in the right DB
-            query = re.sub(r'\b(?:alice|bob|hive_demo)\.', '', query, flags=re.IGNORECASE)
-
-        return query
+            # DuckDB: strip semicolons and party name prefixes
+            query = query.rstrip().rstrip(';').rstrip()
+            query = re.sub(r'\b(?:alice|bob|default|hive_demo)\.', '', query, flags=re.IGNORECASE)
+            return query
 
     def _generate_ticket(self, query: str) -> bytes:
         """生成唯一的 ticket ID"""
