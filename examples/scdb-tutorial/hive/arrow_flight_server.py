@@ -58,6 +58,7 @@ class DuckDBBackend(DatabaseBackend):
     def _init_test_data(self):
         """初始化测试数据"""
         self.conn.execute('CREATE SCHEMA IF NOT EXISTS "default"')
+        self.conn.execute('SET search_path TO "default"')
 
         if self.party == "alice":
             self.conn.execute('''
@@ -258,73 +259,57 @@ def create_backend(args) -> DatabaseBackend:
 
 
 # =============================================================================
-# Protobuf 解析工具
 # =============================================================================
-
-def _read_varint(data: bytes, start: int) -> tuple:
-    """读取 protobuf varint，返回 (value, bytes_consumed)"""
-    result = 0
-    shift = 0
-    idx = start
-    while idx < len(data):
-        byte = data[idx]
-        result |= (byte & 0x7f) << shift
-        idx += 1
-        if (byte & 0x80) == 0:
-            break
-        shift += 7
-    return result, idx - start
-
+# Protobuf parsing (using google.protobuf library)
+# =============================================================================
 
 def parse_flight_sql_command(data: bytes) -> str:
     """
-    解析 Arrow Flight SQL 的 CommandStatementQuery protobuf 消息
-
-    CommandStatementQuery 的 protobuf 定义:
-    message CommandStatementQuery {
-      string query = 1;
-      string transaction_id = 2;
-    }
+    Parse Arrow Flight SQL CommandStatementQuery protobuf message.
+    Uses google.protobuf to unwrap Any wrapper if present,
+    then extracts the query string from field 1.
     """
     if not data:
         return ""
 
     try:
-        # 检查是否是 google.protobuf.Any 包装
+        from google.protobuf import descriptor_pb2
+        from google.protobuf.any_pb2 import Any as AnyProto
+        from google.protobuf.descriptor_pool import DescriptorPool
+        from google.protobuf.message_factory import GetMessageClass
+
         if b"type.googleapis.com" in data:
-            idx = 0
-            while idx < len(data):
-                if data[idx] == 0x12:  # field 2, wire type 2
-                    idx += 1
-                    length, varint_size = _read_varint(data, idx)
-                    idx += varint_size
-                    inner_data = data[idx:idx+length]
-                    return parse_flight_sql_command(inner_data)
-                idx += 1
+            any_msg = AnyProto()
+            any_msg.ParseFromString(data)
+            data = any_msg.value
 
-        # 直接解析 CommandStatementQuery
-        idx = 0
-        while idx < len(data):
-            tag = data[idx]
-            idx += 1
-
-            if tag == 0x0a:  # field 1 (query)
-                length, varint_size = _read_varint(data, idx)
-                idx += varint_size
-                return data[idx:idx+length].decode("utf-8")
-            elif (tag & 0x07) == 2:
-                length, varint_size = _read_varint(data, idx)
-                idx += varint_size + length
-            elif (tag & 0x07) == 0:
-                _, varint_size = _read_varint(data, idx)
-                idx += varint_size
-            else:
-                break
-
-        return data.decode("utf-8", errors="replace")
+        file_desc_proto = descriptor_pb2.FileDescriptorProto(
+            name="flight_sql.proto",
+            package="arrow.flight.protocol.sql",
+            message_type=[descriptor_pb2.DescriptorProto(
+                name="CommandStatementQuery",
+                field=[
+                    descriptor_pb2.FieldDescriptorProto(
+                        name="query", number=1, type=9, label=1,
+                    ),
+                    descriptor_pb2.FieldDescriptorProto(
+                        name="transaction_id", number=2, type=9, label=1,
+                    ),
+                ],
+            )],
+        )
+        pool = DescriptorPool()
+        pool.Add(file_desc_proto)
+        desc = pool.FindMessageTypeByName(
+            "arrow.flight.protocol.sql.CommandStatementQuery"
+        )
+        CmdClass = GetMessageClass(desc)
+        msg = CmdClass()
+        msg.ParseFromString(data)
+        return msg.query
 
     except Exception as e:
-        print(f"[警告] 解析 protobuf 失败: {e}")
+        print(f"[warning] protobuf parse failed, falling back to raw decode: {e}")
         return data.decode("utf-8", errors="replace")
 
 
@@ -360,8 +345,8 @@ class FlightSqlServer(flight.FlightServerBase):
         import re
 
         if isinstance(self.backend, DuckDBBackend):
-            # DuckDB 需要引号包裹 schema 名
-            query = re.sub(r'\bdefault\.(\w+)', r'"default".\1', query, flags=re.IGNORECASE)
+            # Strip party name prefix (alice./bob./default./hive_demo.) for DuckDB
+            query = re.sub(r'\b(?:alice|bob|default|hive_demo)\.', '', query, flags=re.IGNORECASE)
 
         return query
 

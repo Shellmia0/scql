@@ -74,3 +74,4 @@ examples/scdb-tutorial/start_all.sh
 examples/scdb-tutorial/start_all_hive.sh
 examples/scdb-tutorial/stop_all.sh
 examples/scdb-tutorial/stop_all_hive.sh
+derby.log

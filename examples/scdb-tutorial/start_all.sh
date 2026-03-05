@@ -1,8 +1,8 @@
 #!/bin/bash
 # SCQL 本地启动脚本
 
-PROJECT_ROOT="/root/autodl-tmp/scql"
-TUTORIAL_DIR="/root/autodl-tmp/scql/examples/scdb-tutorial"
+PROJECT_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
+TUTORIAL_DIR="$PROJECT_ROOT/examples/scdb-tutorial"
 BIN_DIR="$PROJECT_ROOT/bin"
 
 echo "========================================="
