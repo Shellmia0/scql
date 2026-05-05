@@ -24,9 +24,6 @@ on:
         default: 'false'
         type: boolean
 
-  # Run on schedule for nightly tests
-  schedule:
-    - cron: '0 2 * * *'  # Run at 2 AM UTC daily
 
 jobs:
   unit-tests:

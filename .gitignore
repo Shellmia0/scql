@@ -39,12 +39,7 @@ tool-bin/*
 python/build/
 python/package/
 
-# Hive tutorial logs
-examples/tutorial/hive/logs/
-
-# tutorial generated files
-/derby.log
-/logs/
+# Hive tutorial generated files
 /examples/tutorial/hive/derby.log
 /examples/tutorial/hive/logs/
 /examples/tutorial/scdb/data/
