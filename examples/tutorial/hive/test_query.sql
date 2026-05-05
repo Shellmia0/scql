@@ -1,3 +1,2 @@
 -- 测试 SCQL 基本功能
 SHOW DATABASES;
-

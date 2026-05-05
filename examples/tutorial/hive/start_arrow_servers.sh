@@ -65,4 +65,3 @@ echo "停止服务器: pkill -f scql-hive-flight-sql-server.jar"
 echo ""
 
 wait
-
